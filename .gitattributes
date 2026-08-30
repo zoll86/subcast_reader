@@ -1,0 +1,12 @@
+# LF sortörés mindenhol.
+#
+# A GitHub Actions Linuxon futtatja az APK-építést, és a receptbe beágyazott
+# shell- és Python-szkriptek CRLF sortöréssel elhasalnának ("bad interpreter",
+# illetve elrontott heredoc-lezárás). Windowsról szerkesztve a git enélkül
+# CRLF-re váltana.
+* text=auto eol=lf
+
+# a bináris fájlokhoz ne nyúljon
+*.png binary
+*.apk binary
+*.keystore binary
