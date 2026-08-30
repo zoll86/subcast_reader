@@ -1,6 +1,13 @@
+# A Capacitor által GENERÁLT dolgok — ezek build közben jönnek létre.
+#
+# FONTOS: a perjel az elején a gyökérhez horgonyoz. Enélkül az "android/"
+# minta MINDEN android nevű mappára illeszkedne, beleértve a natív bővítmény
+# forrását is (mappa-plugin/android/…) — emiatt az első CI-futás elbukott
+# "no such file or directory: mappa-plugin/android/src/main" hibával.
+/android/
+/www/
+/assets/
+
 node_modules/
-www/
-android/
-assets/
 *.apk
 .DS_Store
