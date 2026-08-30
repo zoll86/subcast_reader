@@ -22,6 +22,7 @@
 
 import { settings, saveSettings } from './store.js';
 import * as P from './player.js';
+import { haptic } from './native.js';
 
 const dom = {
   reader: document.getElementById('reader'),
@@ -36,8 +37,8 @@ const dom = {
   rate: document.getElementById('p-rate'),
   lang: document.getElementById('p-lang'),
   exit: document.getElementById('p-exit'),
-  back30: document.getElementById('p-back30'),
-  fwd30: document.getElementById('p-fwd30'),
+  prev: document.getElementById('p-prev'),
+  next: document.getElementById('p-next'),
   status: document.getElementById('dock-status'),
   zoneLeft: document.getElementById('zone-left'),
   zoneRight: document.getElementById('zone-right'),
@@ -177,6 +178,14 @@ function setActive(index) {
 
 let scrollAnim = 0;
 
+/** A kezelőket előhívó él-sáv vastagsága képpontban.
+ *  MAGÁBÓL A CSS-BŐL olvassuk ki (a #zones rács első sora), hogy a két helyen
+ *  megadott érték soha ne csúszhasson szét. */
+function ELSAV_PX() {
+  const h = dom.zoneTop.getBoundingClientRect().height;
+  return h > 4 ? h : 38;          // ha még nincs kirajzolva, 1 cm-nyi tartalék
+}
+
 function animateScrollTo(target, duration = 420) {
   cancelAnimationFrame(scrollAnim);
 
@@ -293,8 +302,13 @@ P.on('active', setActive);
 P.on('tick', updateDock);
 P.on('state', () => {
   updateDock();
+  // A SZÜNETELTETÉS NEM HOZZA VISSZA A KEZELŐKET.
+  //
+  // Középre koppintva azért állítod meg a hangot, hogy elolvashasd a szöveget.
+  // Ha ilyenkor felúszna a lejátszósáv, épp az alsó sorokat takarná el — vagyis
+  // pont azt, amiért megállítottad. A kezelők csak akkor jönnek elő, ha
+  // kifejezetten kéred: a képernyő felső vagy alsó centiméterére koppintva.
   if (P.isPlaying()) showControls();
-  else { clearTimeout(hideTimer); dom.reader.classList.add('controls'); }
 });
 
 /* ── ÉRINTÉSZÓNÁK ──
@@ -307,14 +321,18 @@ dom.flow.addEventListener('click', e => {
 
   const rect = dom.reader.getBoundingClientRect();
   const x = (e.clientX - rect.left) / rect.width;
-  const y = (e.clientY - rect.top) / rect.height;
+  const yPx = e.clientY - rect.top;
 
-  if (y < 0.14) { toggleControls(); flash(dom.zoneTop); return; }
-  if (y > 0.86) { toggleControls(); flash(dom.zoneBottom); return; }
+  // A kezelőket előhívó sávok pontosan olyan keskenyek, mint a CSS-ben:
+  // egyetlen centiméter fent és lent. Képpontban számoljuk, nem arányban,
+  // hogy nagy és kis kijelzőn egyforma vastag legyen a sáv.
+  const SAV = ELSAV_PX();
+  if (yPx < SAV) { toggleControls(); flash(dom.zoneTop); return; }
+  if (yPx > rect.height - SAV) { toggleControls(); flash(dom.zoneBottom); return; }
 
   if (x < 0.30) { P.jumpSentence(-1); flash(dom.zoneLeft); }
   else if (x > 0.70) { P.jumpSentence(1); flash(dom.zoneRight); }
-  else { P.toggle(); flash(dom.zoneCenter); }
+  else { P.toggle(); flash(dom.zoneCenter, 1.6); }
 });
 
 function toggleControls() {
@@ -322,18 +340,23 @@ function toggleControls() {
   else { showControls(); flashHints(); }
 }
 
-function flash(node) {
+function flash(node, szorzo = 1) {
+  haptic(szorzo);
   node.classList.add('flash');
   setTimeout(() => node.classList.remove('flash'), 140);
 }
 
 // gombok
-dom.play.addEventListener('click', () => { P.toggle(); showControls(); });
-dom.back30.addEventListener('click', () => { P.nudge(-30); showControls(); });
-dom.fwd30.addEventListener('click', () => { P.nudge(30); showControls(); });
-dom.rate.addEventListener('click', () => { P.cycleRate(); updateDock(); showControls(); });
-dom.lang.addEventListener('click', () => { cycleLang(); showControls(); });
-dom.exit.addEventListener('click', () => onExit());
+dom.play.addEventListener('click', () => { haptic(1.6); P.toggle(); showControls(); });
+/* MONDATONKÉNTI LÉPTETÉS, nem másodperc-ugrás.
+   A feliratban minden mondatnak pontos kezdőideje van, tehát a mondathatár az
+   igazi léptetési egység: a −30 másodperc a mondat közepére esik, és onnan
+   újra kell keresni a fonalat. */
+dom.prev.addEventListener('click', () => { haptic(); P.jumpSentence(-1); showControls(); });
+dom.next.addEventListener('click', () => { haptic(); P.jumpSentence(1); showControls(); });
+dom.rate.addEventListener('click', () => { haptic(); P.cycleRate(); updateDock(); showControls(); });
+dom.lang.addEventListener('click', () => { haptic(); cycleLang(); showControls(); });
+dom.exit.addEventListener('click', () => { haptic(1.6); onExit(); });
 
 // idősáv húzása
 let seekDragging = false;
@@ -345,7 +368,7 @@ function seekFromEvent(e) {
 }
 dom.seek.addEventListener('pointerdown', e => { seekDragging = true; seekFromEvent(e); dom.seek.setPointerCapture(e.pointerId); });
 dom.seek.addEventListener('pointermove', e => { if (seekDragging) seekFromEvent(e); });
-dom.seek.addEventListener('pointerup', () => { seekDragging = false; showControls(); });
+dom.seek.addEventListener('pointerup', () => { seekDragging = false; haptic(); showControls(); });
 
 // Kézi görgetés közben ne rángassa vissza az automatika a szöveget.
 let scrollTimer = null;

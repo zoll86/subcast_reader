@@ -246,6 +246,31 @@ function pickFolderInput(onProgress) {
   });
 }
 
+/* ─────────────────────────── haptikus visszajelzés ───────────────────────────
+
+   Rövid rezgés minden érintésre, hogy olvasás közben a KÉPERNYŐ NÉZÉSE NÉLKÜL
+   is tudd: megérkezett a koppintás. Ez pont az a helyzet, amiért az egész app
+   készült — a szemed a szövegen van, nem a gombokon.
+
+   Androidon a WebView `navigator.vibrate` hívása csak akkor működik, ha az app
+   megkapta a VIBRATE jogot (a Mappa-bővítmény manifestje kéri).
+   ─────────────────────────────────────────────────────────────── */
+
+let hapticMs = 0;
+
+/** A beállított erősség (0 = kikapcsolva). A main.js állítja be induláskor. */
+export function setHaptics(ms) {
+  hapticMs = Math.max(0, Math.min(60, Number(ms) || 0));
+}
+
+/** Egy rövid koppanás. Erősebb visszajelzéshez add meg a szorzót (pl. 2). */
+export function haptic(szorzo = 1) {
+  if (!hapticMs) return;
+  try {
+    if (navigator.vibrate) navigator.vibrate(Math.round(hapticMs * szorzo));
+  } catch { /* nem minden készülék tudja */ }
+}
+
 /* ─────────────────────────── képernyő ébren tartása ───────────────────────────
 
    Nem háttérlejátszásról van szó: olvasás közben végig nézed a képernyőt, tehát

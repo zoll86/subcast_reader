@@ -11,7 +11,7 @@
    pontosan azt rontaná el, amiért az egész app készült.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE = 'subcast-olvaso-v2';
+const CACHE = 'subcast-olvaso-v3';
 
 const SHELL = [
   './',

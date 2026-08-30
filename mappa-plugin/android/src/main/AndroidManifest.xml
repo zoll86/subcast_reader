@@ -2,4 +2,8 @@
     <!-- A képernyő ébren tartásához olvasás közben. Háttérlejátszás NINCS,
          ezért nem kell sem előtér-szolgáltatás, sem értesítési jog. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- A WebView navigator.vibrate hívása CSAK ezzel a joggal működik.
+         Enélkül némán nem történik semmi: nincs hibaüzenet, csak nincs rezgés. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 </manifest>

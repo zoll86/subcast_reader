@@ -71,6 +71,7 @@ const DEFAULT_SETTINGS = {
   fontSize: 22,
   lang: 'both',        // 'hu' | 'both' | 'en'
   keepAwake: 1,
+  haptics: 12,                       // rezgés ezredmásodpercben, 0 = kikapcsolva
   pair: null,          // { token, gistId }
   deviceName: 'telefon',
   groqKey: '',                       // felismeréshez (Groq Whisper)

@@ -135,6 +135,15 @@
         <button data-v="en">csak angol</button>
       </div>
 
+      <label class="lbl">Rezgés érintésre</label>
+      <div class="seg" id="seg-haptics">
+        <button data-v="0">nincs</button>
+        <button data-v="8">finom</button>
+        <button data-v="12">közepes</button>
+        <button data-v="22">erős</button>
+      </div>
+      <p class="note">Rövid koppanás minden érintésre, hogy a képernyő nézése nélkül is tudd, megérkezett-e.</p>
+
       <label class="lbl">Képernyő</label>
       <div class="seg" id="seg-awake">
         <button data-v="1">maradjon ébren</button>
@@ -211,9 +220,9 @@
     <div id="seek"><i id="seek-fill"></i><b id="seek-knob"></b></div>
     <div class="times"><span id="time-now">0:00</span><span id="time-all">0:00</span></div>
     <div class="row center">
-      <button class="pbtn" id="p-back30">−30 mp</button>
+      <button class="pbtn" id="p-prev">◀ mondat</button>
       <button class="pbtn big" id="p-play">▶</button>
-      <button class="pbtn" id="p-fwd30">+30 mp</button>
+      <button class="pbtn" id="p-next">mondat ▶</button>
     </div>
     <div class="row center">
       <button class="pbtn" id="p-rate">1,0×</button>

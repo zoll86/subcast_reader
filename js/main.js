@@ -23,6 +23,10 @@ const app = {
   series: [],
   currentSeries: null,
   view: 'library',
+
+  // A folyamatos lejátszáshoz: melyik listából és hányadik részt játsszuk.
+  playlist: [],
+  playIndex: -1,
 };
 
 /* ─────────────────────────── nézetváltás ─────────────────────────── */
@@ -174,7 +178,12 @@ function escapeHtml(text) {
 
 /* ─────────────────────────── epizód megnyitása ─────────────────────────── */
 
-async function openEpisode(episode) {
+async function openEpisode(episode, lista = null) {
+  // A lejátszási lista alapból az aktuális sorozat részei, abban a sorrendben,
+  // ahogy a listában látod.
+  app.playlist = lista || (app.currentSeries ? app.currentSeries.episodes : app.episodes);
+  app.playIndex = app.playlist.indexOf(episode);
+
   toast('Betöltés…');
   try {
     const { rows, source } = await loadSubtitles(episode, app.folder, {
@@ -247,7 +256,53 @@ Egy egyórás rész néhány percig tart.`);
   }
 }
 
+/* ─────────────────────────── folyamatos lejátszás ───────────────────────────
+
+   Ha egy rész véget ér, magától jön a következő — ugyanabban a sorrendben,
+   ahogy a listában látod. Ez az alapértelmezett viselkedés: sorozatot az ember
+   végighallgat, nem epizódonként indítgat újra.
+
+   Megáll, ha:
+     · elfogyott a sorozat,
+     · vagy kiléptél az olvasóból (a kilépés törli a listát).
+   ─────────────────────────────────────────────────────────────── */
+
+let lancFut = false;
+
+async function kovetkezoResz() {
+  if (lancFut) return;
+  if (!app.playlist.length || app.playIndex < 0) return;
+
+  const kov = app.playlist[app.playIndex + 1];
+  if (!kov) {
+    toast('Ez volt a sorozat utolsó része.');
+    return;
+  }
+
+  lancFut = true;
+  try {
+    toast(`Következik: ${kov.title}`);
+    // Rövid szünet, hogy a lezáró mondat még leülepedjen, és lásd az üzenetet.
+    await new Promise(r => setTimeout(r, 1200));
+    await openEpisode(kov, app.playlist);
+  } catch (err) {
+    console.error(err);
+    toast(`Nem sikerült a következő rész: ${err.message}`);
+  } finally {
+    lancFut = false;
+  }
+}
+
+P.on('ended', () => {
+  // Csak akkor lépünk tovább, ha tényleg az olvasóban vagyunk. Ha közben
+  // kiléptél, a lejátszó leállítása is 'ended'-et adhat — abból ne induljon
+  // el a következő rész.
+  if (!$('reader').hidden) kovetkezoResz();
+});
+
 function exitReader() {
+  app.playlist = [];
+  app.playIndex = -1;
   P.pause();
   P.unload();
   closeReader();
@@ -360,6 +415,7 @@ function renderSettings() {
   markSeg('seg-claude-model', settings.claudeModel);
   markSeg('seg-font', settings.fontSize);
   markSeg('seg-lang', settings.lang);
+  markSeg('seg-haptics', settings.haptics);
   markSeg('seg-awake', settings.keepAwake);
   $('about-info').textContent =
     `SubCast Olvasó · ${native.platformName()} · ${app.episodes.length} rész a könyvtárban`;
@@ -382,6 +438,12 @@ function bindSeg(id, apply) {
 
 bindSeg('seg-font', v => applyFontSize(+v));
 bindSeg('seg-lang', v => applyLang(v));
+bindSeg('seg-haptics', v => {
+  saveSettings({ haptics: +v });
+  native.setHaptics(+v);
+  native.haptic(1.4);          // azonnal érezd, mit választottál
+});
+
 bindSeg('seg-awake', v => {
   saveSettings({ keepAwake: +v });
   native.keepAwake(+v === 1 && !$('reader').hidden);
@@ -435,6 +497,7 @@ $('btn-unpair').addEventListener('click', () => {
 async function boot() {
   applyFontSize(settings.fontSize);
   applyLang(settings.lang);
+  native.setHaptics(settings.haptics);
 
   // 1) A korábbi könyvtár azonnal — hogy ne legyen üres képernyő indításkor.
   const saved = await cache.getLibrary();

@@ -484,7 +484,11 @@ textarea:focus, input:focus { outline: none; border-color: var(--gold); }
   pointer-events: none;
   display: grid;
   grid-template-columns: 30fr 40fr 30fr;
-  grid-template-rows: 14fr 72fr 14fr;
+  /* A kezelőket előhívó sávok SZÁNDÉKOSAN keskenyek: egyetlen centiméter a
+     képernyő tetején és alján. Korábban a magasság 14-14%-a volt, ami olvasás
+     közben folyton közbeszólt — a szöveg felső és alsó harmadára eső koppintás
+     is a menüt hozta elő ahelyett, hogy szüneteltetett vagy lépett volna. */
+  grid-template-rows: 1cm 1fr 1cm;
   grid-template-areas:
     "top    top    top"
     "left   center right"

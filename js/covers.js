@@ -296,6 +296,14 @@ export async function getSeriesCover(series, folder) {
   const mentett = await cache.getCover(kulcs);
   if (mentett) return mentett;
 
+  // A gép EPIZÓDONKÉNT is küldhet borítót — a hangoskönyveknél így van, mert
+  // két hangoskönyvnek semmi köze egymáshoz, csak a program teszi őket egy
+  // gyűjtőnév alá. Ilyenkor a csempe az első rész borítóját mutatja.
+  for (const ep of series.episodes.slice(0, 3)) {
+    const epKep = await cache.getCover(ep.key);
+    if (epKep) return epKep;
+  }
+
   let dataUrl = null;
 
   // 1. képfájl a sorozat mappájában
