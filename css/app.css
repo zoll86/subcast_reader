@@ -40,6 +40,7 @@
   --gold: #e8b64c;
   --green: #57d9a3;
   --red: #e8735a;
+  --blue: #6fa8e6;
 
   /* térköz-skála */
   --sp1: 4px; --sp2: 8px; --sp3: 12px; --sp4: 16px;
@@ -315,6 +316,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--gold); }
   vertical-align: middle;
 }
 .badge.hu { color: var(--green); border-color: rgba(87,217,163,.35); }
+.badge.en { color: var(--blue, #6fa8e6); border-color: rgba(111,168,230,.35); }
 .badge.none { color: var(--faint); }
 .badge.done { color: var(--gold); border-color: rgba(232,182,76,.35); }
 

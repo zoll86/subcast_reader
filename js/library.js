@@ -47,8 +47,13 @@ export function buildLibrary(folder, cloudIndex) {
       series: (m && m.s) || seriesFromPath(audio.path),
       number: m ? m.n : null,
       duration: (m && m.d) || prog.duration || 0,
+      // A "van felirat" és a "van MAGYAR felirat" két külön dolog. A Magnus
+      // Archives-nál például csak angol átirat készült el eddig: van feliratsor,
+      // de magyar szöveg nincs benne. Ha a kettőt összemossuk, a telefon
+      // magyarnak jelzi azt, ami nem az.
       hasCloudSubs: !!(m && m.sub),
       hasHu: !!(m && m.hu),
+      hasEn: !!(m && m.en),
       position: prog.position,
       positionTs: prog.ts,
     });
@@ -74,7 +79,7 @@ function groupSeries(episodes) {
       map.set(ep.series, s);
     }
     s.episodes.push(ep);
-    if (ep.hasCloudSubs) s.ready++;
+    if (ep.hasHu) s.ready++;
     const ratio = ep.duration > 0 ? ep.position / ep.duration : 0;
     if (ratio > 0.97) s.finished++;
     else if (ep.position > 30) s.started++;

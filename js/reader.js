@@ -132,13 +132,20 @@ function renderRows(rows, source) {
     node.className = 'pair';
     node.dataset.index = index;
 
-    const hu = document.createElement('div');
-    hu.className = 'hu';
-    hu.textContent = row[2] || '';
-    node.appendChild(hu);
-
+    // HA NINCS MAGYAR, AZ ANGOL KERÜL A FŐ HELYRE.
+    //
+    // Van epizód, amihez eddig csak angol átirat készült (a gépen fut még a
+    // fordítás). Ilyenkor a magyar mező üres — ha vakon azt írnánk ki, üres
+    // sorok között görgetnél. Jobb az angolt nagyban mutatni, mint semmit.
+    const huText = row[2] || '';
     const enText = row[3] || '';
-    if (enText) {
+
+    const fo = document.createElement('div');
+    fo.className = 'hu';
+    fo.textContent = huText || enText;
+    node.appendChild(fo);
+
+    if (huText && enText) {
       const en = document.createElement('div');
       en.className = 'en';
       en.textContent = enText;
@@ -150,7 +157,10 @@ function renderRows(rows, source) {
   });
 
   dom.flow.appendChild(frag);
-  dom.status.textContent = `${rows.length} mondat · ${source}`;
+  const vanMagyar = rows.some(r => (r[2] || '').trim());
+  dom.status.textContent = vanMagyar
+    ? `${rows.length} mondat · ${source}`
+    : `${rows.length} mondat · CSAK ANGOL (a fordítás még nem készült el)`;
 }
 
 /* ─────────────────────────── az aktív mondat ─────────────────────────── */

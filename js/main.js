@@ -75,9 +75,11 @@ function renderLibrary() {
   $('folder-card').hidden = !hasFolder;
 
   if (hasFolder) {
-    const withSubs = app.episodes.filter(e => e.hasCloudSubs).length;
+    const magyar = app.episodes.filter(e => e.hasHu).length;
+    const csakAngol = app.episodes.filter(e => !e.hasHu && (e.hasEn || e.hasCloudSubs)).length;
     $('folder-info').textContent =
-      `${app.folder.name} · ${app.episodes.length} rész · ${withSubs} feliratos`;
+      `${app.folder.name} · ${app.episodes.length} rész · ${magyar} magyar`
+      + (csakAngol ? ` · ${csakAngol} csak angol` : '');
   }
 
   renderHero();
@@ -152,9 +154,11 @@ function openSeries(series) {
     const ratio = prog.duration > 0 ? prog.position / prog.duration : 0;
     const finished = ratio > 0.97;
 
-    const badge = ep.hasCloudSubs
+    const badge = ep.hasHu
       ? '<span class="badge hu">magyar</span>'
-      : '<span class="badge none">nincs felirat</span>';
+      : (ep.hasEn || ep.hasCloudSubs)
+        ? '<span class="badge en">csak angol</span>'
+        : '<span class="badge none">nincs felirat</span>';
     const doneBadge = finished ? '<span class="badge done">kész</span>' : '';
 
     const btn = document.createElement('button');
