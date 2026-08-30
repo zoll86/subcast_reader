@@ -16,7 +16,7 @@ const LS_BEAT = 'subcast.beat';
 const LS_LAST = 'subcast.last';
 
 const DB_NAME = 'subcast';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 /* ─────────────────────────── IndexedDB vékony réteg ─────────────────────── */
 
@@ -30,6 +30,9 @@ function db() {
       const d = req.result;
       if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv');
       if (!d.objectStoreNames.contains('subs')) d.createObjectStore('subs');
+      // A borítóképek külön tárolóban: nagyok, és a feliratoktól függetlenül
+      // ürítjük vagy építjük újra.
+      if (!d.objectStoreNames.contains('covers')) d.createObjectStore('covers');
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -178,6 +181,11 @@ export const cache = {
   setSubs: (key, rows) => idb.set('subs', key, rows),
   subKeys: () => idb.keys('subs'),
   clearSubs: () => idb.clear('subs'),
+
+  /** Borítóképek: kulcs = sorozatnév, érték = data: URL (vagy null, ha nincs). */
+  getCover: (key) => idb.get('covers', key),
+  setCover: (key, value) => idb.set('covers', key, value),
+  clearCovers: () => idb.clear('covers'),
 
   /** Egyszerre több epizód feliratának mentése (egy csomag kicsomagolásakor). */
   async setManySubs(map) {

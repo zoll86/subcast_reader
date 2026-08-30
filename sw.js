@@ -11,7 +11,7 @@
    pontosan azt rontaná el, amiért az egész app készült.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE = 'subcast-olvaso-v1';
+const CACHE = 'subcast-olvaso-v2';
 
 const SHELL = [
   './',
@@ -25,6 +25,7 @@ const SHELL = [
   './js/player.js',
   './js/reader.js',
   './js/cloud.js',
+  './js/covers.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

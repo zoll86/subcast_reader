@@ -236,6 +236,10 @@ public class MappaPlugin extends Plugin {
             || n.endsWith(".wav") || n.endsWith(".ogg") || n.endsWith(".opus")
             || n.endsWith(".aac") || n.endsWith(".flac")
             || n.endsWith(".srt") || n.endsWith(".vtt")
+            // Borítóképek: van sorozat, amelyiknél a kép a mappában fekszik és
+            // nincs beágyazva az MP3-ba (pl. ATSAB.jpg).
+            || n.endsWith(".jpg") || n.endsWith(".jpeg")
+            || n.endsWith(".png") || n.endsWith(".webp")
             || n.equals("subcast_cloud.json");
     }
 

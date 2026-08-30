@@ -230,6 +230,9 @@ class MappaSzerver implements Runnable {
         if (n.contains(".wav")) return "audio/wav";
         if (n.contains(".ogg") || n.contains(".opus")) return "audio/ogg";
         if (n.contains(".flac")) return "audio/flac";
+        if (n.contains(".jpg") || n.contains(".jpeg")) return "image/jpeg";
+        if (n.contains(".png")) return "image/png";
+        if (n.contains(".webp")) return "image/webp";
         return "application/octet-stream";
     }
 

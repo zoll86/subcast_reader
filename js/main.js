@@ -13,6 +13,7 @@ import { parseSrt, findSubtitleFile } from './srt.js';
 import * as P from './player.js';
 import { openReader, closeReader, applyLang, applyFontSize, replaceRows } from './reader.js';
 import { cloud, onCloudChange, isPaired, pair, unpair, sync, startAutoSync } from './cloud.js';
+import { getSeriesCover } from './covers.js';
 
 const $ = id => document.getElementById(id);
 
@@ -81,17 +82,37 @@ function renderLibrary() {
   list.innerHTML = '';
   $('library-empty').hidden = !(hasFolder && app.episodes.length === 0);
 
+  const grid = document.createElement('div');
+  grid.className = 'cover-grid';
+
   for (const s of app.series) {
     const done = s.finished;
+    const arany = s.episodes.length ? (done / s.episodes.length) * 100 : 0;
+
     const btn = document.createElement('button');
-    btn.className = 'tile';
+    btn.className = 'cover-tile';
     btn.innerHTML = `
-      <div class="tile-title">${escapeHtml(s.name)}</div>
-      <div class="tile-sub">${s.episodes.length} rész · ${s.ready} feliratos${done ? ` · ${done} kész` : ''}</div>
-      <div class="tile-bar"><i style="width:${s.episodes.length ? (done / s.episodes.length) * 100 : 0}%"></i></div>`;
+      <div class="cover-art">
+        <img alt="">
+        ${done ? `<span class="done">${done} kész</span>` : ''}
+        ${arany > 0 ? `<span class="bar"><i style="width:${arany}%"></i></span>` : ''}
+      </div>
+      <div class="cover-name">${escapeHtml(s.name)}</div>
+      <div class="cover-sub">${s.episodes.length} rész · ${s.ready} feliratos</div>`;
     btn.addEventListener('click', () => openSeries(s));
-    list.appendChild(btn);
+    grid.appendChild(btn);
+
+    // A borító betöltése NEM várakoztatja meg a listát: a rács azonnal
+    // megjelenik, a képek pedig ahogy elkészülnek, beúsznak a helyükre.
+    // Egy beágyazott borító kiolvasása fájlonként pár száz ezredmásodperc, és
+    // sorozatonként csak egyszer fut le — utána a tárolóból jön.
+    const img = btn.querySelector('img');
+    getSeriesCover(s, app.folder)
+      .then(url => { if (url) { img.src = url; img.classList.add('on'); } })
+      .catch(err => console.warn('Borító:', s.name, err));
   }
+
+  list.appendChild(grid);
 }
 
 function renderHero() {

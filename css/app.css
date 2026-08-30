@@ -318,6 +318,90 @@ textarea:focus, input:focus { outline: none; border-color: var(--gold); }
 .badge.none { color: var(--faint); }
 .badge.done { color: var(--gold); border-color: rgba(232,182,76,.35); }
 
+/* ─────────────────────────── borítós rács ───────────────────────────
+
+   Két oszlop telefonon. A borító NÉGYZETES és a csempe teljes szélességét
+   kitölti — a podcast-borítók szinte kivétel nélkül négyzetesek, és a szem
+   sokkal gyorsabban felismer egy képet, mint egy szövegsort.
+
+   A képet `object-fit: cover` vágja, tehát a nem pontosan négyzetes borítók
+   sem torzulnak el, csak a széleik csúsznak le.
+   ─────────────────────────────────────────────────────────────── */
+
+.cover-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp3);
+  margin-bottom: var(--sp4);
+}
+@media (min-width: 560px) { .cover-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.cover-tile {
+  display: block;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: transform .14s var(--spring);
+}
+.cover-tile:active { transform: scale(.96); }
+
+.cover-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--r2);
+  overflow: hidden;
+  background: var(--s1);
+  border: 1px solid var(--line2);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+}
+.cover-art img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition: opacity .35s ease;
+}
+.cover-art img.on { opacity: 1; }
+
+/* haladássáv a borító alján */
+.cover-art .bar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 3px; background: rgba(0, 0, 0, .45);
+}
+.cover-art .bar i { display: block; height: 100%; background: var(--gold); }
+
+/* „kész" jelvény a borító sarkában */
+.cover-art .done {
+  position: absolute; top: 6px; right: 6px;
+  background: rgba(6, 5, 9, .82);
+  border: 1px solid rgba(232, 182, 76, .5);
+  color: var(--gold);
+  font-size: 10px; letter-spacing: .05em;
+  padding: 2px 6px; border-radius: 999px;
+}
+
+.cover-name {
+  margin-top: var(--sp2);
+  font-size: var(--t2);
+  font-weight: 600;
+  line-height: 1.25;
+  /* legfeljebb két sor, hogy a rács sorai egyforma magasak maradjanak */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cover-sub {
+  font-family: var(--mono);
+  font-size: var(--t1);
+  color: var(--faint);
+  margin-top: 2px;
+}
+
 /* ═══════════════════════════ OLVASÓ ═══════════════════════════ */
 
 #reader {
