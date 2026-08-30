@@ -1,0 +1,7 @@
+{
+  "name": "mappa-plugin",
+  "version": "1.0.0",
+  "description": "Podcast-mappa (SAF) és helyi hangkiszolgáló a SubCast Olvasóhoz",
+  "capacitor": { "android": { "src": "android" } },
+  "peerDependencies": { "@capacitor/core": ">=6.0.0" }
+}

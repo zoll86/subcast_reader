@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0a0e">
+<title>SubCast Olvasó</title>
+
+<!--
+  SubCast Olvasó — kétnyelvű podcast-olvasó és -hallgató.
+
+  SZÁNDÉKOSAN NINCS BENNE EGYETLEN KÜLSŐ HIVATKOZÁS SEM.
+  Se CDN, se webfont, se ikonkészlet. Minden betűtípus a rendszeré, minden ikon
+  beágyazott SVG. Ok: a telefonon az app offline is teljes értékű kell legyen —
+  a korábbi változat azért esett szét net nélkül, mert a Tailwindet és az
+  ikonokat futásidőben töltötte le.
+
+  Ez a fájl csak VÁZ. A logika a js/ mappában van, modulokra bontva.
+-->
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/app.css">
+<link rel="icon" href="icons/icon-192.png">
+</head>
+<body>
+
+<!-- ══════════════ FEJLÉC ══════════════ -->
+<header id="topbar">
+  <button class="icon-btn" id="btn-back" hidden aria-label="Vissza">
+    <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+
+  <div class="brand" id="brand">
+    <b>SUBCAST</b>
+    <small>olvasó · EN → HU</small>
+  </div>
+
+  <div class="head-title" id="head-title" hidden>
+    <b id="head-title-main"></b>
+    <span id="head-title-sub"></span>
+  </div>
+
+  <div class="spacer"></div>
+
+  <button class="icon-btn" id="btn-sync" aria-label="Szinkronizálás most">
+    <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+    <i class="dot" id="sync-dot"></i>
+  </button>
+  <button class="icon-btn" id="btn-settings" aria-label="Beállítások">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5v.2a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H2a2 2 0 110-4h.1A1.7 1.7 0 003.6 9a1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H8a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1h.2a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+  </button>
+</header>
+
+<main id="main">
+
+  <!-- ══════════════ KÖNYVTÁR ══════════════ -->
+  <section class="view on" id="view-library">
+
+    <div class="card hero" id="hero" hidden>
+      <div class="hero-label">folytatás</div>
+      <div class="hero-title" id="hero-title"></div>
+      <div class="hero-meta" id="hero-meta"></div>
+      <div class="hero-bar"><i id="hero-bar-fill"></i></div>
+      <button class="btn primary wide" id="hero-play">Folytatom innen</button>
+    </div>
+
+    <div class="card" id="first-run">
+      <h3>Első lépés</h3>
+      <p class="note">
+        Válaszd ki azt a mappát a telefonodon, ahová a podcastokat másolod.
+        Az app csak olvassa — a fájlok ott maradnak, ahol vannak, és nem másolódnak sehova.
+      </p>
+      <button class="btn primary wide" id="btn-pick-folder">Podcast-mappa kiválasztása</button>
+    </div>
+
+    <div class="card" id="folder-card" hidden>
+      <div class="row between">
+        <div>
+          <h3 class="tight">Könyvtár</h3>
+          <div class="note mono" id="folder-info"></div>
+        </div>
+        <button class="btn small" id="btn-rescan">Újraolvasás</button>
+      </div>
+    </div>
+
+    <div id="series-list"></div>
+
+    <div class="empty" id="library-empty" hidden>
+      <p>Nincs megjeleníthető hanganyag.</p>
+      <p class="note">Ellenőrizd, hogy a kiválasztott mappában vannak-e .mp3 / .m4a / .m4b fájlok.</p>
+    </div>
+  </section>
+
+  <!-- ══════════════ EGY SOROZAT RÉSZEI ══════════════ -->
+  <section class="view" id="view-series">
+    <h2 id="series-name"></h2>
+    <div class="note" id="series-meta"></div>
+    <div id="episode-list"></div>
+  </section>
+
+  <!-- ══════════════ BEÁLLÍTÁSOK ══════════════ -->
+  <section class="view" id="view-settings">
+    <h2>Beállítások</h2>
+
+    <div class="card">
+      <h3>Szinkron a géppel</h3>
+      <p class="note" id="cloud-note">
+        A gépen futó SubCast feltölti a feliratokat és azt, hol tartasz.
+        Illeszd be ide a párosító kódot, amit a gépes program mutat.
+      </p>
+      <div class="state-row" id="cloud-state"></div>
+      <textarea id="pair-input" rows="3" placeholder="párosító kód beillesztése…"></textarea>
+      <div class="row">
+        <button class="btn primary" id="btn-pair">Párosítás</button>
+        <button class="btn" id="btn-pair-file">Kód betöltése a mappából</button>
+      </div>
+      <button class="btn danger small" id="btn-unpair" hidden>Párosítás törlése</button>
+    </div>
+
+    <div class="card">
+      <h3>Olvasás</h3>
+
+      <label class="lbl">Betűméret</label>
+      <div class="seg" id="seg-font">
+        <button data-v="18">kicsi</button>
+        <button data-v="22">közepes</button>
+        <button data-v="27">nagy</button>
+        <button data-v="33">nagyon nagy</button>
+      </div>
+
+      <label class="lbl">Mit mutasson</label>
+      <div class="seg" id="seg-lang">
+        <button data-v="hu">csak magyar</button>
+        <button data-v="both">magyar + angol</button>
+        <button data-v="en">csak angol</button>
+      </div>
+
+      <label class="lbl">Képernyő</label>
+      <div class="seg" id="seg-awake">
+        <button data-v="1">maradjon ébren</button>
+        <button data-v="0">alhat</button>
+      </div>
+      <p class="note">Olvasás közben érdemes ébren tartani, különben a képernyő elalszik és megáll a szöveg követése.</p>
+    </div>
+
+    <div class="card">
+      <h3>Szükség-fordító</h3>
+      <p class="note">
+        Ha útközben olyan részhez érsz, amihez még nincs felirat, a telefon is el tudja
+        készíteni — gyengébb minőségben, mint a gép. Ehhez kell egy ingyenes Groq API-kulcs.
+        <a href="https://console.groq.com/keys" target="_blank">Kulcs igénylése &#8599;</a>
+      </p>
+      <input type="text" id="groq-key" placeholder="gsk_…" autocomplete="off">
+      <button class="btn small" id="btn-save-groq">Kulcs mentése</button>
+    </div>
+
+    <div class="card">
+      <h3>Névjegy</h3>
+      <div class="note mono" id="about-info"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══════════════ OLVASÓ ══════════════ -->
+<div id="reader" hidden>
+  <div id="reader-flow"></div>
+
+  <!-- Érintészónák. A rácsnak CSAK a halvány határvonalak megmutatása a dolga;
+       a feliratok külön, tömör sávban vannak (#zone-legend), hogy soha ne
+       folyjanak rá az olvasott mondatra. -->
+  <div id="zones">
+    <div class="zone" id="zone-top"></div>
+    <div class="zone" id="zone-left"></div>
+    <div class="zone" id="zone-center"></div>
+    <div class="zone" id="zone-right"></div>
+    <div class="zone" id="zone-bottom"></div>
+  </div>
+
+  <div id="zone-legend">
+    <span>◀ előző<br>mondat</span>
+    <span>szünet /<br>folytatás</span>
+    <span>következő ▶<br>mondat</span>
+  </div>
+
+  <div id="dock">
+    <div id="seek"><i id="seek-fill"></i><b id="seek-knob"></b></div>
+    <div class="times"><span id="time-now">0:00</span><span id="time-all">0:00</span></div>
+    <div class="row center">
+      <button class="pbtn" id="p-back30">−30 mp</button>
+      <button class="pbtn big" id="p-play">▶</button>
+      <button class="pbtn" id="p-fwd30">+30 mp</button>
+    </div>
+    <div class="row center">
+      <button class="pbtn" id="p-rate">1,0×</button>
+      <button class="pbtn" id="p-lang">magyar</button>
+      <button class="pbtn" id="p-exit">könyvtár</button>
+    </div>
+    <div class="note center" id="dock-status"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<audio id="audio" preload="metadata"></audio>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

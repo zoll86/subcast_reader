@@ -1,0 +1,12 @@
+{
+  "appId": "hu.zoll86.subcast",
+  "appName": "SubCast Olvasó",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

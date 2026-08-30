@@ -1,0 +1,17 @@
+{
+  "name": "SubCast Olvasó",
+  "short_name": "SubCast",
+  "description": "Kétnyelvű podcast-olvasó és -hallgató: az elhangzó mondat magyarul és angolul, a géppel szinkronban.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0a0e",
+  "theme_color": "#0b0a0e",
+  "lang": "hu",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

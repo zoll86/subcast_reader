@@ -1,0 +1,540 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   SubCast Olvasó — teljes stíluslap
+
+   OLVASÁSI ELVEK (ezek nem díszítés, hanem a használhatóság feltételei):
+
+   BAL ÉL      Minden szöveg ugyanahhoz a bal élhez igazodik. Az éppen hangzó
+               mondatot egy 2 px-es arany sáv köti ehhez a vonalhoz, így a szem
+               egyetlen függőleges pályán mozog, nem ugrál.
+   KÖZELSÉG    Az angol–magyar mondatpár szorosan egymás alatt van (--sp2), a
+               párok között viszont négyszer annyi hely (--sp6). A csoport így
+               olvasás ELŐTT látszik.
+   KESKENY SÁV A szövegoszlop legfeljebb 34rem. Hosszabb sorokban a szem
+               elveszti a sor elejét — hangzó szöveg mellett ez végzetes.
+   ÜRES ALSÓ   A képernyő alsó harmada üresen marad a kezelőknek. Zsúfoltan
+               nem lehet követni a hangot.
+   RENDSZERBETŰ Nincs webfont. Az olvasószöveg a rendszer talpas betűje
+               (Androidon Noto Serif), a felületé a rendszer sans-serifje.
+               Így az app net nélkül is pontosan ugyanúgy néz ki.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* felületek */
+  --bg: #0b0a0e;
+  --bg2: #12101a;
+  --s1: rgba(255,255,255,.035);
+  --s2: rgba(255,255,255,.07);
+  --panel: rgba(24,21,32,.86);
+
+  /* szöveg */
+  --txt: #f2ecf6;
+  --txt2: #c9c1d2;
+  --dim: #9a92a6;
+  --faint: #6d6678;
+
+  /* vonalak */
+  --line: rgba(255,255,255,.11);
+  --line2: rgba(255,255,255,.06);
+
+  /* akcentusok */
+  --gold: #e8b64c;
+  --green: #57d9a3;
+  --red: #e8735a;
+
+  /* térköz-skála */
+  --sp1: 4px; --sp2: 8px; --sp3: 12px; --sp4: 16px;
+  --sp5: 24px; --sp6: 32px; --sp7: 48px;
+
+  /* lekerekítés */
+  --r1: 8px; --r2: 14px; --r3: 22px;
+
+  /* betűméret-skála */
+  --t1: 11px; --t2: 13px; --t3: 15px; --t4: 19px; --t5: 24px;
+
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --serif: ui-serif, "Noto Serif", Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, "Roboto Mono", "SF Mono", Menlo, monospace;
+
+  --spring: cubic-bezier(.34, 1.4, .64, 1);
+
+  /* az olvasó betűmérete — futásidőben állítja a beállítás */
+  --read-size: 22px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background:
+    radial-gradient(1100px 640px at 8% -12%, rgba(232,182,76,.10), transparent 62%),
+    radial-gradient(900px 600px at 100% 4%, rgba(155,140,240,.09), transparent 60%),
+    linear-gradient(168deg, var(--bg), var(--bg2) 62%, #08070b);
+  background-attachment: fixed;
+  color: var(--txt);
+  font-family: var(--sans);
+  font-size: var(--t3);
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+button, input, textarea, select { font-family: inherit; color: inherit; font-size: inherit; }
+[hidden] { display: none !important; }
+
+/* ─────────────────────────── fejléc ─────────────────────────── */
+
+#topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--sp2);
+  padding: var(--sp3) var(--sp4);
+  padding-top: max(var(--sp3), env(safe-area-inset-top));
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+  z-index: 20;
+}
+
+.brand b {
+  display: block;
+  font-size: var(--t2);
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+.brand small {
+  display: block;
+  font-size: var(--t1);
+  letter-spacing: .14em;
+  color: var(--faint);
+}
+
+.head-title { min-width: 0; flex: 1 1 auto; }
+.head-title b {
+  display: block; font-size: var(--t3); font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.head-title span { display: block; font-family: var(--mono); font-size: var(--t1); color: var(--faint); }
+
+.spacer { flex: 1 1 auto; }
+
+.icon-btn {
+  position: relative;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border: 1px solid var(--line);
+  background: var(--s1);
+  border-radius: var(--r1);
+  cursor: pointer;
+  transition: background .15s, transform .12s var(--spring);
+}
+.icon-btn:active { transform: scale(.94); }
+.icon-btn svg {
+  width: 19px; height: 19px;
+  fill: none; stroke: var(--txt2);
+  stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round;
+}
+.icon-btn .dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--faint);
+  transition: background .3s;
+}
+.icon-btn .dot.ok { background: var(--green); }
+.icon-btn .dot.busy { background: var(--gold); animation: pulse 1s infinite; }
+.icon-btn .dot.err { background: var(--red); }
+@keyframes pulse { 50% { opacity: .3; } }
+
+/* ─────────────────────────── lapok ─────────────────────────── */
+
+#main {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.view {
+  display: none;
+  padding: var(--sp5) var(--sp4) var(--sp7);
+  max-width: 42rem;
+  margin: 0 auto;
+}
+.view.on { display: block; }
+
+h2 {
+  font-size: var(--t5); font-weight: 700;
+  letter-spacing: .01em; margin: 0 0 var(--sp2);
+}
+h3 { font-size: var(--t3); font-weight: 600; margin: 0 0 var(--sp3); }
+h3.tight { margin-bottom: 2px; }
+
+.note {
+  color: var(--dim); font-size: var(--t2);
+  line-height: 1.55; margin: 0 0 var(--sp3);
+}
+.note.mono { font-family: var(--mono); font-size: var(--t1); color: var(--faint); }
+.note.center { text-align: center; margin: 0; }
+
+.card {
+  background: var(--s1);
+  border: 1px solid var(--line2);
+  border-radius: var(--r2);
+  padding: var(--sp4);
+  margin-bottom: var(--sp4);
+}
+
+.row { display: flex; gap: var(--sp2); align-items: center; flex-wrap: wrap; }
+.row.between { justify-content: space-between; }
+.row.center { justify-content: center; }
+
+.empty { text-align: center; padding: var(--sp7) var(--sp4); color: var(--dim); }
+
+/* ─────────────────────────── gombok ─────────────────────────── */
+
+.btn {
+  border: 1px solid var(--line);
+  background: var(--s1);
+  color: var(--txt);
+  border-radius: var(--r1);
+  padding: 11px 15px;
+  font-size: var(--t2);
+  cursor: pointer;
+  transition: transform .12s var(--spring), background .15s;
+}
+.btn:active { transform: scale(.96); }
+.btn.primary {
+  background: linear-gradient(160deg, var(--gold), #cf9f39);
+  color: #1a1409; border-color: transparent; font-weight: 700;
+}
+.btn.danger { border-color: rgba(232,115,90,.45); color: var(--red); }
+.btn.small { padding: 7px 11px; font-size: var(--t1); }
+.btn.wide { width: 100%; }
+.btn:disabled { opacity: .45; }
+
+/* szegmensválasztó */
+.seg {
+  display: flex; gap: 2px;
+  background: var(--s1);
+  border: 1px solid var(--line2);
+  border-radius: var(--r1);
+  padding: 3px;
+  margin-bottom: var(--sp3);
+  overflow-x: auto;
+}
+.seg button {
+  flex: 1 1 0; min-width: max-content;
+  border: 0; background: transparent;
+  color: var(--dim);
+  border-radius: 6px;
+  padding: 9px 10px;
+  font-size: var(--t1);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.seg button.on { background: var(--s2); color: var(--gold); font-weight: 600; }
+
+.lbl {
+  display: block;
+  font-size: var(--t1);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin: var(--sp4) 0 var(--sp2);
+}
+
+textarea, input[type=text] {
+  width: 100%;
+  background: rgba(0,0,0,.35);
+  border: 1px solid var(--line);
+  border-radius: var(--r1);
+  padding: var(--sp3);
+  font-family: var(--mono);
+  font-size: var(--t2);
+  resize: none;
+  margin-bottom: var(--sp3);
+}
+textarea:focus, input:focus { outline: none; border-color: var(--gold); }
+
+.state-row {
+  display: flex; align-items: center; gap: var(--sp2);
+  font-size: var(--t2);
+  padding: var(--sp3);
+  border-radius: var(--r1);
+  background: rgba(0,0,0,.3);
+  border: 1px solid var(--line2);
+  margin-bottom: var(--sp3);
+}
+.state-row.ok { border-color: rgba(87,217,163,.35); color: var(--green); }
+.state-row.err { border-color: rgba(232,115,90,.35); color: var(--red); }
+
+/* ─────────────────────────── folytatás-kártya ─────────────────────────── */
+
+.hero { border-color: rgba(232,182,76,.28); background: linear-gradient(160deg, rgba(232,182,76,.10), var(--s1)); }
+.hero-label {
+  font-size: var(--t1); letter-spacing: .16em;
+  text-transform: uppercase; color: var(--gold); margin-bottom: var(--sp2);
+}
+.hero-title { font-size: var(--t4); font-weight: 600; line-height: 1.25; }
+.hero-meta { font-family: var(--mono); font-size: var(--t1); color: var(--faint); margin-top: var(--sp1); }
+.hero-bar { height: 3px; background: var(--s2); border-radius: 2px; margin: var(--sp3) 0; overflow: hidden; }
+.hero-bar i { display: block; height: 100%; background: var(--gold); }
+
+/* ─────────────────────────── listák ─────────────────────────── */
+
+.tile {
+  display: block; width: 100%; text-align: left;
+  background: var(--s1);
+  border: 1px solid var(--line2);
+  border-radius: var(--r2);
+  padding: var(--sp4);
+  margin-bottom: var(--sp2);
+  cursor: pointer;
+  transition: transform .12s var(--spring), background .15s;
+}
+.tile:active { transform: scale(.985); background: var(--s2); }
+.tile-title { font-size: var(--t3); font-weight: 600; }
+.tile-sub { font-family: var(--mono); font-size: var(--t1); color: var(--faint); margin-top: 3px; }
+
+.tile-bar { height: 2px; background: var(--s2); border-radius: 2px; margin-top: var(--sp3); overflow: hidden; }
+.tile-bar i { display: block; height: 100%; background: var(--gold); }
+
+.badge {
+  display: inline-block;
+  font-size: 10px; letter-spacing: .06em;
+  padding: 2px 7px; border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--faint);
+  margin-left: var(--sp2);
+  vertical-align: middle;
+}
+.badge.hu { color: var(--green); border-color: rgba(87,217,163,.35); }
+.badge.none { color: var(--faint); }
+.badge.done { color: var(--gold); border-color: rgba(232,182,76,.35); }
+
+/* ═══════════════════════════ OLVASÓ ═══════════════════════════ */
+
+#reader {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background:
+    radial-gradient(900px 600px at 50% -10%, rgba(232,182,76,.07), transparent 60%),
+    linear-gradient(168deg, var(--bg), #08070b);
+  display: flex;
+  flex-direction: column;
+}
+
+#reader-flow {
+  position: relative;      /* hogy a .pair elemek offsetTop-ja EHHEZ képest legyen:
+                              enélkül az aktív mondat középre görgetése rossz
+                              alappontról számolna */
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 45vh var(--sp5) 55vh;   /* az aktív mondat középre görgethető legyen */
+  max-width: 34rem;
+  width: 100%;
+  margin: 0 auto;
+  scrollbar-width: none;
+}
+#reader-flow::-webkit-scrollbar { display: none; }
+
+/* egy mondatpár */
+.pair {
+  position: relative;
+  padding-left: var(--sp4);
+  margin-bottom: var(--sp6);      /* párok KÖZÖTT nagy hely */
+  transition: opacity .3s ease;
+  opacity: .32;
+}
+.pair::before {
+  content: "";
+  position: absolute; left: 0; top: 2px; bottom: 2px;
+  width: 2px; border-radius: 2px;
+  background: transparent;
+  transition: background .25s;
+}
+.pair.on { opacity: 1; }
+.pair.on::before { background: var(--gold); }
+
+.pair .hu {
+  font-family: var(--serif);
+  font-size: var(--read-size);
+  line-height: 1.45;
+  color: var(--txt);
+}
+.pair .en {
+  font-family: var(--serif);
+  font-size: calc(var(--read-size) / 1.618);   /* φ-arány: az angol alárendelt */
+  line-height: 1.5;
+  color: var(--dim);
+  margin-top: var(--sp2);                       /* páron BELÜL kicsi hely */
+  font-style: italic;
+}
+.pair.on .en { color: var(--txt2); }
+
+/* nyelvi módok */
+#reader.lang-hu .pair .en { display: none; }
+#reader.lang-en .pair .hu { display: none; }
+#reader.lang-en .pair .en {
+  font-size: var(--read-size);
+  font-style: normal;
+  color: var(--txt);
+  margin-top: 0;
+}
+
+/* ─────────────── érintészónák ─────────────── */
+
+/* A zónaréteg CSAK JELZÉS. Az érintést maga a szövegterület kezeli (reader.js),
+   különben ez a réteg elfogná a görgetést is, és a szöveget nem lehetne mozgatni. */
+#zones {
+  position: absolute; inset: 0;
+  z-index: 41;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: 30fr 40fr 30fr;
+  grid-template-rows: 14fr 72fr 14fr;
+  grid-template-areas:
+    "top    top    top"
+    "left   center right"
+    "bottom bottom bottom";
+}
+#zone-top { grid-area: top; }
+#zone-left { grid-area: left; }
+#zone-center { grid-area: center; }
+#zone-right { grid-area: right; }
+#zone-bottom { grid-area: bottom; }
+
+/* A ZÓNÁK CSAK EMLÉKEZTETŐK, nem állandó felületi elemek.
+   Ha a feliratok végig látszanának — és a zóna KÖZEPÉRE kerülnének —, pontosan
+   az éppen olvasott mondatra folynának rá. Ezért két dolgot csinálunk:
+     · a rács csak halvány HATÁRVONALAKAT mutat, feliratot nem;
+     · a magyarázó szöveg külön sávban, a szöveg alatt jelenik meg.
+   Mindkettő másfél másodpercre villan fel megnyitáskor, aztán nyomtalanul
+   eltűnik. */
+.zone {
+  opacity: 0;
+  transition: opacity .3s, background .15s;
+}
+#reader.hints .zone { opacity: 1; }
+
+#reader.hints #zone-left { border-right: 1px solid rgba(255,255,255,.09); }
+#reader.hints #zone-right { border-left: 1px solid rgba(255,255,255,.09); }
+#reader.hints #zone-top { border-bottom: 1px solid rgba(255,255,255,.09); }
+#reader.hints #zone-bottom { border-top: 1px solid rgba(255,255,255,.09); }
+
+.zone.flash { background: rgba(232,182,76,.10); opacity: 1; }
+
+/* a magyarázó sáv: a szöveg ALATT, a lejátszósáv fölött */
+#zone-legend {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 26%;
+  z-index: 43;
+  display: grid;
+  grid-template-columns: 30fr 40fr 30fr;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .3s;
+}
+#reader.hints #zone-legend { opacity: 1; }
+
+#zone-legend span {
+  text-align: center;
+  font-size: var(--t1);
+  line-height: 1.35;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--txt2);
+  background: rgba(6,5,9,.86);
+  border: 1px solid var(--line2);
+  border-radius: var(--r1);
+  padding: 8px 4px;
+  margin: 0 4px;
+}
+
+/* ─────────────── lejátszósáv ─────────────── */
+
+#dock {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 42;
+  background: var(--panel);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+  padding: var(--sp3) var(--sp4);
+  padding-bottom: max(var(--sp3), env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp2);
+  transform: translateY(110%);
+  transition: transform .3s var(--spring);
+}
+#reader.controls #dock { transform: translateY(0); }
+
+#seek { position: relative; height: 26px; display: flex; align-items: center; cursor: pointer; }
+#seek::before {
+  content: ""; position: absolute; left: 0; right: 0; height: 3px;
+  background: var(--s2); border-radius: 2px;
+}
+#seek i {
+  position: absolute; left: 0; height: 3px;
+  background: var(--gold); border-radius: 2px; width: 0;
+}
+#seek b {
+  position: absolute; width: 13px; height: 13px; border-radius: 50%;
+  background: var(--gold); left: 0; margin-left: -6px;
+  box-shadow: 0 0 0 4px rgba(232,182,76,.18);
+}
+
+.times {
+  display: flex; justify-content: space-between;
+  font-family: var(--mono); font-size: var(--t1); color: var(--faint);
+}
+
+.pbtn {
+  border: 1px solid var(--line);
+  background: var(--s1);
+  color: var(--txt2);
+  border-radius: var(--r1);
+  padding: 10px 14px;
+  font-size: var(--t2);
+  min-height: 44px;
+  cursor: pointer;
+  transition: transform .12s var(--spring);
+}
+.pbtn:active { transform: scale(.94); }
+.pbtn.big {
+  font-size: var(--t4); min-width: 72px;
+  background: linear-gradient(160deg, var(--gold), #cf9f39);
+  color: #1a1409; border-color: transparent;
+}
+
+/* ─────────────────────────── értesítés ─────────────────────────── */
+
+#toast {
+  position: fixed;
+  left: 50%; bottom: 12%;
+  transform: translate(-50%, 20px);
+  z-index: 90;
+  background: rgba(12,10,16,.96);
+  border: 1px solid var(--line);
+  border-radius: var(--r3);
+  padding: 10px 18px;
+  font-size: var(--t2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s, transform .25s var(--spring);
+  max-width: 80vw;
+  text-align: center;
+}
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+#audio { display: none; }

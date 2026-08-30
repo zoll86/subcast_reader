@@ -1,0 +1,15 @@
+{
+  "name": "subcast-reader",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SubCast Olvasó — kétnyelvű podcast-olvasó és -hallgató",
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "mappa-plugin": "file:./mappa-plugin"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/assets": "^3.0.5"
+  }
+}
