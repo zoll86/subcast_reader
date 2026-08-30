@@ -263,12 +263,28 @@ export function setHaptics(ms) {
   hapticMs = Math.max(0, Math.min(60, Number(ms) || 0));
 }
 
-/** Egy rövid koppanás. Erősebb visszajelzéshez add meg a szorzót (pl. 2). */
+/**
+ * Egy rövid koppanás. Erősebb visszajelzéshez add meg a szorzót (pl. 1,6).
+ *
+ * ELSŐSORBAN A NATÍV UTAT HASZNÁLJUK. A WebView `navigator.vibrate` hívása
+ * Androidon megbízhatatlan: van, ahol némán nem csinál semmit — nem dob hibát,
+ * egyszerűen nem rezeg. A bővítmény ehelyett közvetlenül az Android
+ * rezgésvezérlőjét szólítja meg, és az amplitúdót is beállítja (alapból a
+ * rendszer a maximumot adná, ami olvasás közben túl erős).
+ */
 export function haptic(szorzo = 1) {
   if (!hapticMs) return;
+  const ms = Math.round(hapticMs * szorzo);
+
+  const p = plugin();
+  if (p && p.rezeg) {
+    p.rezeg({ ms }).catch(() => {});
+    return;
+  }
+
   try {
-    if (navigator.vibrate) navigator.vibrate(Math.round(hapticMs * szorzo));
-  } catch { /* nem minden készülék tudja */ }
+    if (navigator.vibrate) navigator.vibrate(ms);
+  } catch { /* böngészőben nincs mindig */ }
 }
 
 /* ─────────────────────────── képernyő ébren tartása ───────────────────────────

@@ -301,14 +301,17 @@ function cycleLang() {
 P.on('active', setActive);
 P.on('tick', updateDock);
 P.on('state', () => {
-  updateDock();
-  // A SZÜNETELTETÉS NEM HOZZA VISSZA A KEZELŐKET.
+  // A LEJÁTSZÁS ÁLLAPOTVÁLTOZÁSA SOHA NEM HOZZA ELŐ A KEZELŐKET.
   //
-  // Középre koppintva azért állítod meg a hangot, hogy elolvashasd a szöveget.
-  // Ha ilyenkor felúszna a lejátszósáv, épp az alsó sorokat takarná el — vagyis
-  // pont azt, amiért megállítottad. A kezelők csak akkor jönnek elő, ha
-  // kifejezetten kéred: a képernyő felső vagy alsó centiméterére koppintva.
-  if (P.isPlaying()) showControls();
+  // Sem a szüneteltetés, sem a folytatás. Középre koppintva azért állítod meg a
+  // hangot, hogy elolvashasd a szöveget — ha ilyenkor felúszna a lejátszósáv,
+  // épp az alsó sorokat takarná el. A folytatás pedig azért nem hozhatja elő,
+  // mert így két gyors koppintás (szünet, majd folytatás) mindig felvillantotta
+  // a menüt, holott egyiket sem azért nyomtad meg.
+  //
+  // A kezelők KIZÁRÓLAG akkor jelennek meg, ha kifejezetten kéred: a képernyő
+  // felső vagy alsó centiméterére koppintva, vagy amikor megnyitod az olvasót.
+  updateDock();
 });
 
 /* ── ÉRINTÉSZÓNÁK ──

@@ -38,7 +38,7 @@ import java.util.UUID;
  *
  * SZÁNDÉKOSAN KICSI
  * -----------------
- * Hat metódus, semmi több. Nincs benne beszédfelismerés, letöltéskezelő,
+ * Hét metódus, semmi több. Nincs benne beszédfelismerés, letöltéskezelő,
  * beszédszintézis, RSS-proxy vagy előtér-szolgáltatás — az elődje azoktól nőtt
  * több mint ezer sorosra, és lett átláthatatlan. Amire a telefonos olvasónak
  * szüksége van: mappa kijelölése, listázás, szövegfájl beolvasása, és a hang
@@ -241,6 +241,44 @@ public class MappaPlugin extends Plugin {
             || n.endsWith(".jpg") || n.endsWith(".jpeg")
             || n.endsWith(".png") || n.endsWith(".webp")
             || n.equals("subcast_cloud.json");
+    }
+
+    /* ═══════════════ 6. haptikus visszajelzés ═══════════════ */
+
+    @PluginMethod
+    public void rezeg(PluginCall call) {
+        int ms = call.getInt("ms", 12);
+        if (ms <= 0) { call.resolve(); return; }
+        ms = Math.min(ms, 80);
+
+        try {
+            android.os.Vibrator v;
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                android.os.VibratorManager vm = (android.os.VibratorManager)
+                        getContext().getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE);
+                v = vm == null ? null : vm.getDefaultVibrator();
+            } else {
+                v = (android.os.Vibrator)
+                        getContext().getSystemService(android.content.Context.VIBRATOR_SERVICE);
+            }
+
+            if (v == null || !v.hasVibrator()) {
+                call.resolve(new JSObject().put("ok", false).put("ok_reason", "nincs rezgőmotor"));
+                return;
+            }
+
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                // Az amplitúdót is megadjuk: alapértelmezésben a rendszer a
+                // maximumot használná, ami egy olvasóban túl erős.
+                int ero = Math.max(1, Math.min(255, ms * 6));
+                v.vibrate(android.os.VibrationEffect.createOneShot(ms, ero));
+            } else {
+                v.vibrate(ms);
+            }
+            call.resolve(new JSObject().put("ok", true));
+        } catch (Exception e) {
+            call.resolve(new JSObject().put("ok", false).put("ok_reason", e.getMessage()));
+        }
     }
 
     /* ═══════════════ 6. szövegfájl beolvasása ═══════════════ */
