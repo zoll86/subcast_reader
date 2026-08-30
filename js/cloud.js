@@ -162,7 +162,7 @@ export async function sync({ force = false, quiet = false } = {}) {
   running = true;
   if (!quiet) emit('busy', 'Szinkronizálás…');
 
-  const summary = { positions: 0, index: false, bundles: 0, pushed: false };
+  const summary = { positions: 0, index: false, bundles: 0, covers: 0, pushed: false };
 
   try {
     const beatText = await raw('beat.json', { cacheBust: true });
@@ -192,7 +192,21 @@ export async function sync({ force = false, quiet = false } = {}) {
       }
     }
 
-    // 3) feliratcsomagok — csak a megváltozottak
+    // 3) borítóképek — a gép küldi, mert ő tud utánuk keresni a neten is
+    if (beat.covers_rev && beat.covers_rev !== known.covers_rev) {
+      const b64 = await raw('covers.txt', { cacheBust: true });
+      if (b64) {
+        const covers = await gunzipJson(b64);
+        for (const [sorozat, kep] of Object.entries(covers)) {
+          // A géptől jövő borító FELÜLÍRJA a helyben kiolvasottat és a
+          // generált helyettesítőt is: a gépen te hagytad jóvá, tehát az a jó.
+          await cache.setCover(sorozat, `data:image/jpeg;base64,${kep}`);
+          summary.covers++;
+        }
+      }
+    }
+
+    // 4) feliratcsomagok — csak a megváltozottak
     const knownBundles = known.bundles || {};
     for (const [name, rev] of Object.entries(beat.bundles || {})) {
       if (knownBundles[name] === rev) continue;
@@ -205,7 +219,7 @@ export async function sync({ force = false, quiet = false } = {}) {
 
     setBeat(beat);
 
-    // 4) a saját pozícióink felküldése
+    // 5) a saját pozícióink felküldése
     summary.pushed = await pushPositions();
 
     cloud.lastSync = Date.now();
@@ -225,6 +239,7 @@ function describe(s) {
   const parts = [];
   if (s.bundles) parts.push(`${s.bundles} feliratcsomag`);
   if (s.index) parts.push('könyvtár frissült');
+  if (s.covers) parts.push(`${s.covers} borító`);
   if (s.positions) parts.push(`${s.positions} pozíció a gépről`);
   if (s.pushed) parts.push('haladás felküldve');
   return parts.length ? parts.join(' · ') : 'Már naprakész.';

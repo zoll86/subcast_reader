@@ -73,7 +73,9 @@ const DEFAULT_SETTINGS = {
   keepAwake: 1,
   pair: null,          // { token, gistId }
   deviceName: 'telefon',
-  groqKey: '',        // csak a szükség-fordítóhoz kell
+  groqKey: '',                       // felismeréshez (Groq Whisper)
+  claudeKey: '',                     // fordításhoz, a Google helyett
+  claudeModel: 'claude-opus-5',      // ha van Claude-kulcs, ezzel fordít
 };
 
 function readJSON(key, fallback) {

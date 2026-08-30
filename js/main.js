@@ -356,6 +356,8 @@ function renderCloudState() {
 function renderSettings() {
   renderCloudState();
   $('groq-key').value = settings.groqKey || '';
+  $('claude-key').value = settings.claudeKey || '';
+  markSeg('seg-claude-model', settings.claudeModel);
   markSeg('seg-font', settings.fontSize);
   markSeg('seg-lang', settings.lang);
   markSeg('seg-awake', settings.keepAwake);
@@ -406,6 +408,15 @@ $('btn-pair-file').addEventListener('click', async () => {
   if (!file) { toast('Nincs subcast_cloud.json a mappában. A gépes programban kattints a „Párosító kód megjelenítése" gombra.'); return; }
   $('pair-input').value = await native.readText(file);
   toast('Kód betöltve — nyomd meg a Párosítás gombot.');
+});
+
+bindSeg('seg-claude-model', v => saveSettings({ claudeModel: v }));
+
+$('btn-save-claude').addEventListener('click', () => {
+  saveSettings({ claudeKey: $('claude-key').value.trim() });
+  toast(settings.claudeKey
+    ? 'Claude-kulcs elmentve — mostantól ezzel fordít a Google helyett.'
+    : 'Claude-kulcs törölve — a fordítás visszaáll a Google-re.');
 });
 
 $('btn-save-groq').addEventListener('click', () => {

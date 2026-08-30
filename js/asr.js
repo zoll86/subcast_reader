@@ -31,7 +31,7 @@
    · Kell hozzá net és egy Groq API-kulcs.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-import { cache } from './store.js';
+import { cache, settings } from './store.js';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/audio/transcriptions';
 const GROQ_MODEL = 'whisper-large-v3-turbo';
@@ -180,6 +180,95 @@ async function forditKoteg(mondatok) {
   return darabok.length === mondatok.length ? darabok : null;
 }
 
+/* ═══════════════ CLAUDE FORDÍTÓ ═══════════════ */
+
+const CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
+
+/**
+ * Fordítás Claude-dal.
+ *
+ * A böngészőből való közvetlen hívást egyetlen fejléc engedélyezi:
+ *     anthropic-dangerous-direct-browser-access: true
+ * Enélkül a kérés el sem indul, a böngésző CORS-hibával elvágja (mérve: a
+ * fejléccel szabályos 401 jön vissza érvénytelen kulcsra, nélküle "Failed to
+ * fetch"). A "dangerous" a névben arra utal, hogy a kulcs így a kliensen van —
+ * a te telefonodon, a te kulcsod, ez itt elfogadható; megosztott weboldalon nem
+ * lenne az.
+ *
+ * Alacsony gondolkodási ráfordítással (effort: low) dolgozunk: a feliratfordítás
+ * nem igényel hosszas mérlegelést, viszont epizódonként több ezer mondatról van
+ * szó, tehát a ráfordítás közvetlenül a számládon látszik.
+ */
+async function forditClaudeKoteg(mondatok, apiKey, model) {
+  const res = await fetch(CLAUDE_URL, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 8000,
+      output_config: { effort: 'low' },
+      messages: [{
+        role: 'user',
+        content:
+          `Fordítsd magyarra az alábbi angol feliratmondatokat. Podcast- vagy
+hangoskönyv-szövegről van szó: tartsd meg a hangulatot, a szlenget és a
+poénokat, és természetes beszélt magyart írj.
+
+CSAK egy JSON-tömböt adj vissza, ugyanannyi elemmel és ugyanabban a sorrendben,
+mint a bemenet. Semmi mást — se magyarázatot, se markdownt.
+
+` + JSON.stringify(mondatok, null, 1),
+      }],
+    }),
+  });
+
+  if (res.status === 401) throw new Error('A Claude API-kulcs érvénytelen.');
+  if (res.status === 429) throw new Error('Elérted a Claude korlátodat. Próbáld később.');
+  if (!res.ok) throw new Error(`Claude hiba (${res.status}): ${(await res.text()).slice(0, 160)}`);
+
+  const data = await res.json();
+  if (data.stop_reason === 'refusal') throw new Error('A Claude elutasította a kérést.');
+
+  const szoveg = (data.content || [])
+    .filter(b => b.type === 'text').map(b => b.text).join('').trim();
+
+  const eleje = szoveg.indexOf('[');
+  const vege = szoveg.lastIndexOf(']');
+  if (eleje < 0 || vege < eleje) throw new Error('A Claude válasza nem értelmezhető.');
+
+  const tomb = JSON.parse(szoveg.slice(eleje, vege + 1));
+  if (!Array.isArray(tomb) || tomb.length !== mondatok.length) {
+    throw new Error('A Claude nem ugyanannyi mondatot adott vissza.');
+  }
+  return tomb.map(x => String(x || ''));
+}
+
+async function forditClaude(mondatok, onProgress) {
+  const apiKey = settings.claudeKey;
+  const model = settings.claudeModel || 'claude-opus-5';
+  const KOTEG = 40;
+  const ki = [];
+
+  for (let i = 0; i < mondatok.length; i += KOTEG) {
+    const koteg = mondatok.slice(i, i + KOTEG);
+    try {
+      ki.push(...await forditClaudeKoteg(koteg, apiKey, model));
+    } catch (e) {
+      // Egy köteg bukása ne vigye el az egész epizódot: üresen hagyjuk, és
+      // megy tovább. Az üres mondat látszik a felületen, a rossz nem.
+      console.warn('Claude köteg hiba:', e);
+      ki.push(...koteg.map(() => ''));
+    }
+    if (onProgress) onProgress(Math.round(ki.length / mondatok.length * 100));
+  }
+  return ki;
+}
+
 async function fordit(mondatok, onProgress) {
   const KOTEG = 40;
   const ki = [];
@@ -248,9 +337,12 @@ export async function feliratotKeszit(episode, blob, apiKey, onProgress = () => 
 
   if (!nyers.length) throw new Error('A felismerés nem talált beszédet a fájlban.');
 
-  /* fordítás */
-  onProgress('fordítás', 0);
-  const magyar = await fordit(nyers.map(r => r[2]), p => onProgress('fordítás', p));
+  /* fordítás — Claude, ha van kulcs; különben a Google ingyenes végpontja */
+  const claudeVan = !!(settings.claudeKey || '').trim();
+  onProgress(claudeVan ? 'fordítás (Claude)' : 'fordítás (Google)', 0);
+  const magyar = claudeVan
+    ? await forditClaude(nyers.map(r => r[2]), p => onProgress('fordítás (Claude)', p))
+    : await fordit(nyers.map(r => r[2]), p => onProgress('fordítás (Google)', p));
 
   const sorok = nyers.map((r, i) => [
     Math.round(r[0] * 100) / 100,

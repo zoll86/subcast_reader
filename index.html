@@ -155,6 +155,30 @@
     </div>
 
     <div class="card">
+      <h3>Claude fordító</h3>
+      <p class="note">
+        Ha megadod a Claude API-kulcsodat, a szükség-fordító ezzel fordít a Google helyett —
+        lényegesen jobb minőségben, mert a szlenget, a poénokat és a hangulatot is átviszi.
+        Fizetős, a felhasznált szöveg mennyisége szerint.
+        <a href="https://console.anthropic.com/settings/keys" target="_blank">Kulcs igénylése &#8599;</a>
+      </p>
+      <input type="text" id="claude-key" placeholder="sk-ant-…" autocomplete="off">
+
+      <label class="lbl">Modell</label>
+      <div class="seg" id="seg-claude-model">
+        <button data-v="claude-opus-5">Opus 5</button>
+        <button data-v="claude-sonnet-5">Sonnet 5</button>
+        <button data-v="claude-haiku-4-5">Haiku 4.5</button>
+      </div>
+      <p class="note">
+        Az Opus a legjobb, a Haiku a legolcsóbb. Feliratfordításnál a Sonnet szokott
+        jó egyensúly lenni.
+      </p>
+
+      <button class="btn small" id="btn-save-claude">Kulcs mentése</button>
+    </div>
+
+    <div class="card">
       <h3>Névjegy</h3>
       <div class="note mono" id="about-info"></div>
     </div>
