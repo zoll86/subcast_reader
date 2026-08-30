@@ -484,15 +484,13 @@ textarea:focus, input:focus { outline: none; border-color: var(--gold); }
   pointer-events: none;
   display: grid;
   grid-template-columns: 30fr 40fr 30fr;
-  /* A kezelőket előhívó sávok SZÁNDÉKOSAN keskenyek: egyetlen centiméter a
-     képernyő tetején és alján. Korábban a magasság 14-14%-a volt, ami olvasás
-     közben folyton közbeszólt — a szöveg felső és alsó harmadára eső koppintás
-     is a menüt hozta elő ahelyett, hogy szüneteltetett vagy lépett volna. */
-  grid-template-rows: 1cm 1fr 1cm;
-  grid-template-areas:
-    "top    top    top"
-    "left   center right"
-    "bottom bottom bottom";
+  /* NINCSENEK ÉL-SÁVOK.
+     A képernyő alsó centimétere Androidon a rendszer gesztus-sávja, a felső az
+     állapotsáv — mindkettőt az Android fogja el, mielőtt az app megkapná, ezért
+     az ottani koppintás soha nem ért ide. A kezelőket ehelyett a KÖZÉPRE mért
+     dupla koppintás hívja elő; az mindig elérhető. */
+  grid-template-rows: 1fr;
+  grid-template-areas: "left center right";
 }
 #zone-top { grid-area: top; }
 #zone-left { grid-area: left; }
@@ -515,8 +513,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--gold); }
 
 #reader.hints #zone-left { border-right: 1px solid rgba(255,255,255,.09); }
 #reader.hints #zone-right { border-left: 1px solid rgba(255,255,255,.09); }
-#reader.hints #zone-top { border-bottom: 1px solid rgba(255,255,255,.09); }
-#reader.hints #zone-bottom { border-top: 1px solid rgba(255,255,255,.09); }
+
 
 .zone.flash { background: rgba(232,182,76,.10); opacity: 1; }
 

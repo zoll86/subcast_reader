@@ -43,8 +43,6 @@ const dom = {
   zoneLeft: document.getElementById('zone-left'),
   zoneRight: document.getElementById('zone-right'),
   zoneCenter: document.getElementById('zone-center'),
-  zoneTop: document.getElementById('zone-top'),
-  zoneBottom: document.getElementById('zone-bottom'),
   title: document.getElementById('head-title'),
   titleMain: document.getElementById('head-title-main'),
   titleSub: document.getElementById('head-title-sub'),
@@ -54,6 +52,10 @@ const LANG_LABEL = { hu: 'magyar', both: 'kétnyelvű', en: 'angol' };
 
 let pairNodes = [];
 let suppressClick = false;
+
+/** Ennyi időn belül érkező második koppintás számít duplának. */
+const DUPLA_MS = 260;
+let dupplaVar = null;
 let hideTimer = null;
 let onExit = () => {};
 let onMakeSubs = null;
@@ -177,14 +179,6 @@ function setActive(index) {
    ugyanoda érkezünk, és a hibák nem adódnak össze. */
 
 let scrollAnim = 0;
-
-/** A kezelőket előhívó él-sáv vastagsága képpontban.
- *  MAGÁBÓL A CSS-BŐL olvassuk ki (a #zones rács első sora), hogy a két helyen
- *  megadott érték soha ne csúszhasson szét. */
-function ELSAV_PX() {
-  const h = dom.zoneTop.getBoundingClientRect().height;
-  return h > 4 ? h : 38;          // ha még nincs kirajzolva, 1 cm-nyi tartalék
-}
 
 function animateScrollTo(target, duration = 420) {
   cancelAnimationFrame(scrollAnim);
@@ -324,18 +318,34 @@ dom.flow.addEventListener('click', e => {
 
   const rect = dom.reader.getBoundingClientRect();
   const x = (e.clientX - rect.left) / rect.width;
-  const yPx = e.clientY - rect.top;
 
-  // A kezelőket előhívó sávok pontosan olyan keskenyek, mint a CSS-ben:
-  // egyetlen centiméter fent és lent. Képpontban számoljuk, nem arányban,
-  // hogy nagy és kis kijelzőn egyforma vastag legyen a sáv.
-  const SAV = ELSAV_PX();
-  if (yPx < SAV) { toggleControls(); flash(dom.zoneTop); return; }
-  if (yPx > rect.height - SAV) { toggleControls(); flash(dom.zoneBottom); return; }
+  if (x < 0.30) { P.jumpSentence(-1); flash(dom.zoneLeft); return; }
+  if (x > 0.70) { P.jumpSentence(1); flash(dom.zoneRight); return; }
 
-  if (x < 0.30) { P.jumpSentence(-1); flash(dom.zoneLeft); }
-  else if (x > 0.70) { P.jumpSentence(1); flash(dom.zoneRight); }
-  else { P.toggle(); flash(dom.zoneCenter, 1.6); }
+  /* ── KÖZÉP: egy koppintás szünet, DUPLA koppintás a kezelők ──
+     A kezelőket korábban a képernyő felső és alsó centiméterére koppintva
+     lehetett előhívni. Ez telefonon nem működött: az alsó sáv az Android
+     gesztus-területe, a felső az állapotsáv — mindkettőt a rendszer fogja el,
+     mielőtt az app megkapná, tehát a koppintás soha nem ért ide.
+
+     A dupla koppintás mindig elérhető. Az egyszeri koppintást ezért egy rövid
+     ablakkal késleltetjük: ha közben jön a második, a szüneteltetés elmarad, és
+     helyette a kezelők jönnek elő. A késleltetés annyira rövid, hogy a
+     szüneteltetés továbbra is azonnalinak érződik. */
+  if (dupplaVar) {
+    clearTimeout(dupplaVar);
+    dupplaVar = null;
+    toggleControls();
+    flashHints();
+    flash(dom.zoneCenter, 1.6);
+    return;
+  }
+
+  dupplaVar = setTimeout(() => {
+    dupplaVar = null;
+    P.toggle();
+    flash(dom.zoneCenter, 1.6);
+  }, DUPLA_MS);
 });
 
 function toggleControls() {
